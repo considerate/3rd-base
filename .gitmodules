@@ -1,0 +1,3 @@
+[submodule "deps/fubar"]
+	path = deps/fubar
+	url = git@github.com:lericson/fubar.git
