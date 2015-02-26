@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+  <meta charset="utf-8">
+  <title>MOCKelind</title>
+  <!--script src="//connect.facebook.net/en_US/all.js"></script-->
+
+  <script src="bundle.js"></script>
+  <script>
+    window.addEventListener('load', function() {
+      var mqtt    = require('mqtt');
+      var client  = mqtt.connect('ws://127.0.0.1:8081/mqtt',
+                                 {protocolId: 'MQIsdp',
+                                  protocolVersion: 3});
+
+      // TODO How to presence?!
+      //client.subscribe('presence');
+      //client.publish('presence', 'Hello mqtt');
+
+      client.on('message', function (topic, message) {
+        // message is Buffer 
+        console.log(message.toString());
+      });
+
+      var users = {};
+
+      // TODO Authentication
+      var me = {id: prompt('What is your user ID?'),
+                picture: 'http://placekitten.com/220/220',
+                name: 'Tengil'};
+      users[me.id] = me;
+
+      function pushChatHistory(msg) {
+        var div = document.createElement('div');
+        div.innerHTML = '<div class="entry"><img>' +
+                        '<h2></h2><p></p></div>';
+        var entry = div.firstChild;
+        entry.querySelector('img').src = users[msg.from].picture;
+        entry.querySelector('h2').innerText = users[msg.from].name;
+        entry.querySelector('p').innerText = msg.text;
+        var history = document.querySelector('.history');
+        history.insertBefore(entry, history.firstChild);
+      }
+
+      function chatTopic(id) {
+        return '/' + id + '/chat';
+      }
+
+      function sendChatMessage(msg) {
+        client.publish(chatTopic(msg.to), JSON.stringify(msg));
+      }
+
+      client.on('message', function (topic, msgRaw) {
+        // message is Buffer 
+        var msg = JSON.parse(msgRaw);
+        pushChatHistory(msg);
+      });
+
+      client.subscribe(chatTopic(me.id));
+
+      document.querySelector('.msg').addEventListener('submit', function(ev) {
+        
+        ev.preventDefault();
+        var input = ev.target.querySelector('[type=input]');
+        var msg = {from: me.id,
+                   to: me.id,
+                   text: input.value};
+
+        if (!msg.text) {
+          return;
+        }
+
+        input.value = '';
+
+        pushChatHistory(msg);
+        sendChatMessage(msg);
+        
+      }, true);
+
+    }, false);
+  </script>
+
+  <style>
+
+    header h1 {
+      margin: 0;
+      padding: 0;
+      line-height: 1;
+      font: 36pt 'Helvetica Neue', sans-serif;
+      text-align: center;
+    }
+    html, body { padding: 0; margin: 0; }
+
+    .msg input {
+      font: 24pt 'Helvetica Neue', sans-serif;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: hsl(0, 100%, 90%);
+      margin-bottom: 10px;
+    }
+
+    .history .entry {
+      margin-bottom: 10px;
+    }
+    .history .entry img { width: 110px; height: 110px; padding: 0 10px; float: left; }
+    .history .entry h2 { margin: 0; padding: 0; }
+    .history .entry p { margin: 0; padding: 0; }
+    .history .entry p:after {
+        content:'';
+        display:block;
+        clear: both;
+    }
+
+  </style>
+
+</head>
+<body>
+  <header>
+    <h1><code>MÖCK</code>ëlïnd</h1>
+  </header>
+
+  <form action="" class="msg">
+    <input type="input" placeholder="Chat message">
+  </form>
+
+  <section class="history">
+  </section>
+
+</body>
+</html>
+

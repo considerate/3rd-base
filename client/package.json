@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "browserify": "*",
+    "mqtt": "https://github.com/lericson/MQTT.js/archive/master.tar.gz"
+  },
+  "repository": "none"
+}
