@@ -1,3 +1,3 @@
 [submodule "deps/fubar"]
 	path = deps/fubar
-	url = git@github.com:lericson/fubar.git
+	url = git@gits-14.sys.kth.se:A-Teens/fubar.git
