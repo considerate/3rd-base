@@ -7,6 +7,12 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.Scanner;
 
+
+/**
+* To compile this program: javac MqttPublishSample.jar -cp "org.eclipse.paho.client.mqttv3-1.0.1.jar:."
+* To run program: java -cp ".:org.eclipse.paho.client.mqttv3-1.0.1.jar" MqttPublishSample
+*
+*/
 public class MqttPublishSample {
 
     public static void main(String[] args) {
