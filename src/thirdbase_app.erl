@@ -1,0 +1,2 @@
+-module (thirdbase_app).
+-behaviour(application).
