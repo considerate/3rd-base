@@ -32,5 +32,5 @@
 +Mummc 99999
 
 ## -detacted
--mnesia dir '"priv/data/fubar"'
+-mnesia dir '"priv/data/3rd-base"'
 -s fubar
