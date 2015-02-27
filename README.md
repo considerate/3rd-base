@@ -13,8 +13,8 @@ Third party implementation of Friendbase Chat Back-end
 ### Starting
 To start in foregroud
   
-  $ ./rel/3rd-base/bin/3rd-base console
+    $ ./rel/3rd-base/bin/3rd-base console
   
 To start as a background process
 
-  $ ./rel/3rd-base/bin/3rd-base start
+    $ ./rel/3rd-base/bin/3rd-base start
