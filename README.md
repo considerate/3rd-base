@@ -7,8 +7,8 @@ Third party implementation of Friendbase Chat Back-end
 ## Usage
 
 ### Installation 
-  $ make deps
-  $ make rel
+    $ make deps
+    $ make rel
   
 ### Starting
 To start in foregroud
