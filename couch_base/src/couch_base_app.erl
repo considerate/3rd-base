@@ -11,7 +11,7 @@ start(_Type, _Args) ->
         	{"/", hello_handler, []}
         ]}
     ]),
-    cowboy:start_http(my_http_listener, 100, [{port, 8080}],
+    cowboy:start_http(my_http_listener, 100, [{port, 8081}],
         [{env, [{dispatch, Dispatch}]}]
     ),
 	couch_base_sup:start_link().
