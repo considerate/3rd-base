@@ -33,3 +33,9 @@ Publish a new message to your own channel so that other clients this user is log
     "_id": "<user id>"
 }
 ```
+
+
+## Threads
+
+To listen for new messages on a thread subscribe to the topic:
+- `"thread/<id>/messages"`
