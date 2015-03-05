@@ -16,7 +16,7 @@ The client connects with username field with the user's id and the password fiel
 ### Notify others of your online presence
 Publish a message to `"online/<user id>"` with the payload `1` and retain set to `true` as well as a Last Will Telegram with the payload `0` and no retain flag where `<user id>` is your user id.
 
-# users/<me>/newthread
+# users/:me/newthread
 When a new thread is created that you are participating in you will recieve a message with the following format:
 ```json
 {
@@ -38,4 +38,16 @@ Publish a new message to your own channel so that other clients this user is log
 ## Threads
 
 To listen for new messages on a thread subscribe to the topic:
-- `"thread/<id>/messages"`
+- `"threads/<id>/messages"`
+
+### Publish a message
+
+Messages of the format:
+```json
+{
+    "body": "<body text>",
+    "image": "<image url>" 
+}
+```
+
+May be published to `"threads/<id>/messages"`.
