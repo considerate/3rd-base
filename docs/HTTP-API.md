@@ -47,3 +47,31 @@ All messages that have been posted to the given thread since the message of the 
     ]
 }
 ```
+
+
+### POST /threads
+```json
+{
+    "users": [
+        "<user id>"
+        ...
+    ]
+}
+```
+Where the list of user contains id:s for both youself and all users you want to talk to. TODO: Maybe implement so that you are always added to list of users if not present.
+
+### POST /threads/:threadid/users
+
+Add users to a given thread.
+```json
+{
+    "users": [
+        "<user id>"
+        ...
+    ]
+}
+```
+
+### DELETE /threads/:threadid/users/:userid
+
+Remove a user from a given thread.
