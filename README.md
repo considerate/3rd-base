@@ -1,5 +1,5 @@
-3rd-base
-========
+3<sup>rd</sup> Base
+===================
 
 <img src="http://thefantasygeek.com/wp-content/uploads/2010/03/Position-Profile-Third-Base.jpg" height="90">
 
