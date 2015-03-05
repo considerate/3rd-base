@@ -33,4 +33,3 @@ Publish a new message to your own channel so that other clients this user is log
     "_id": "<user id>"
 }
 ```
-

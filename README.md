@@ -1,8 +1,9 @@
 3rd-base
 ========
 
-Third party implementation of Friendbase Chat Back-end
+<img src="http://thefantasygeek.com/wp-content/uploads/2010/03/Position-Profile-Third-Base.jpg" height="90">
 
+Third party implementation of Friendbase Chat Back-end
 
 ## Usage
 
