@@ -1,4 +1,4 @@
--module(couch_base_sup).
+-module(baseball_sup).
 -behaviour(supervisor).
 
 -export([start_link/0]).

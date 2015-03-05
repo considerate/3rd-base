@@ -1,4 +1,4 @@
-{application, couch_base, [
+{application, baseball, [
 	{description, ""},
 	{vsn, "0.1.0"},
 	{id, "git"},
@@ -8,6 +8,6 @@
 		kernel,
 		stdlib
 	]},
-	{mod, {couch_base_app, []}},
+	{mod, {baseball_app, []}},
 	{env, []}
 ]}.

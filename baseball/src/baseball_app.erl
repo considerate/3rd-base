@@ -1,4 +1,4 @@
--module(couch_base_app).
+-module(baseball_app).
 -behaviour(application).
 
 -export([start/2]).
@@ -14,7 +14,7 @@ start(_Type, _Args) ->
     cowboy:start_http(my_http_listener, 100, [{port, 8081}],
         [{env, [{dispatch, Dispatch}]}]
     ),
-	couch_base_sup:start_link().
+	baseball_sup:start_link().
 	
 
 stop(_State) ->
