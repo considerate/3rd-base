@@ -31,7 +31,7 @@ All threads that you are a part of.
 }
 ```
 
-### GET /threads/:threadid/messages?since=:messageid
+### GET /threads/:threadid/messages?after=:messageid
 
 Expected Result:
 All messages that have been posted to the given thread since the message of the given messageid. The messages are sorted in chronological order with the oldest message first.
