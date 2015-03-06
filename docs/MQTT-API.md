@@ -19,7 +19,11 @@ Publish a message to `"online/<user id>"` with the payload `1` and retain set to
 When a new thread is created that you are participating in you will recieve a message with the following format:
 ```json
 {
-    "_id": "<thread id>"
+    "_id": "<thread id>",
+    "users": [
+        "<user id>",
+        ...
+    ]
 }
 ```
 
@@ -32,7 +36,6 @@ Publish a new message to your own channel so that other clients this user is log
     "_id": "<user id>"
 }
 ```
-
 
 ## Threads
 

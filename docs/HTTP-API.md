@@ -31,6 +31,21 @@ All threads that you are a part of.
 }
 ```
 
+### GET /threads/:threadid
+Expected Result:
+```json
+{
+    "_id": "<thread id>",
+    "users": [{
+        "_id": "<user id>",
+        "name": "<user name>"
+        },
+        ...
+    ]
+}
+```
+
+
 ### GET /threads/:threadid/messages?after=:messageid
 
 Expected Result:
@@ -44,10 +59,33 @@ All messages that have been posted to the given thread since the message of the 
             "image": "<image url>"
         },
         ...
-    ]
+    ],
+    "links": {
+        "before": "/threads/<thread id>/messages?before=<first message id>"
+    }
 }
 ```
 
+### GET /threads/:threadid/messages?before=:messageid
+
+Expected Result:
+All messages that have been posted to the given thread before the message of the given messageid. The messages are sorted in chronological order with the oldest message first.
+
+```json
+{
+    "rows": [{
+            "_id": "<message id>",
+            "body": "<payload body text>",
+            "image": "<image url>"
+        },
+        ...
+    ],
+    "links": {
+        "before": "/threads/<thread id>/messages?before=<first message id>",
+        "after": "/threads/<thread id>/messages?after=<last message id>"
+    }
+}
+```
 
 ### POST /threads
 ```json
