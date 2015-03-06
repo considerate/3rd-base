@@ -9,6 +9,7 @@ The client connects with username field with the user's id and the password fiel
 ### Subscibe to these topics:
 
 - `"users/<me>/newthread"`
+- `"users/<me>/threadmembers"`
 - `"users/<me>/newfriend"`
 - `"online/<friend>"` for all friends
 
@@ -28,6 +29,20 @@ When a new thread is created that you are participating in you will recieve a me
 ```
 
 Creation of threads is done over HTTP.
+
+## user/:me/threadmembers
+When members are added or have left a thread a message will be recieved on this channel.
+```json
+{
+    "_id": "<thread id>",
+    "users": [
+        "<user id>",
+        ...
+    ]
+}
+```
+
+The list of users will always contain all users participating in the group.
 
 ## When a new friend is added
 Publish a new message to your own channel so that other clients this user is logged in to also can be notified. The format of this message should be:
