@@ -10,7 +10,6 @@ The client connects with username field with the user's id and the password fiel
 
 - `"users/<me>/newthread"`
 - `"users/<me>/newfriend"`
-- `"users/<me>/messages"`
 - `"online/<friend>"` for all friends
 
 ### Notify others of your online presence
