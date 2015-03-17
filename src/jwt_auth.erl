@@ -5,15 +5,15 @@
 %%
 -export([verify/2]).
 
-
--define(MNESIA_TIMEOUT, 10000).
 -define (SECRET, <<"This is a very secret secret, do not tell anyone.">>).
 
 
 %% @doc Verify credential.
 verify(Username, Token) ->
-	case jwt:decode(Token, ?SECRET) of
-		{ok,Data} -> 
+    case ejwt:parse_jwt(Token, ?SECRET) of
+    	invalid -> {error, forbidden};
+    	expired -> {error, forbidden};
+		{Data} -> 
 			case proplists:get_value(<<"id">>, Data) of
 				Username ->
 					{ok, Data};
@@ -21,7 +21,7 @@ verify(Username, Token) ->
 					{error, forbidden}
 			end;
 		Error ->
-			Error
+			{error, Error}
 	end.
 
 %%
