@@ -6,6 +6,7 @@
 
 
 start(_Type, _Args) ->
+	%Change the configuration of baseball by changing the tupple bellow
     Dispatch = cowboy_router:compile([
         {'_', [
         	{"/", hello_handler, []}
