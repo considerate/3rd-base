@@ -1,5 +1,5 @@
 -module (db_utils).
--export ([query/1, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4]).
+-export ([query/1, query/2, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4,get_row_value/1]).
 
 -define(BASE_ADDRESS,"http://localhost:5984/baseball").
 
@@ -11,6 +11,10 @@ connect_to_db() ->
 query(Query) ->
 	{ok, {{Version, 200, ReasonPhrase}, Headers, AnswerFromDB}} = httpc:request(?BASE_ADDRESS ++ Query),
 	jiffy:decode(AnswerFromDB).
+	
+query(Query,Key) ->
+	JSONKey = binary_to_list(jiffy:encode(Key)),
+	query(Query ++ "?key=" ++ JSONKey).
 	
 query(Query,StartKey,EndKey) ->
 	Start = binary_to_list(jiffy:encode(StartKey)),
@@ -50,6 +54,10 @@ run_test_put() -> put_to_db({[
 		{<<"Tags">>,[<<"plankton">>,<<"baseball">>,<<"decisions">>]},
 		{<<"Body">>,<<"I decided today that I don't like baseball. I like plankton.">>}
 	]}).
+
+get_row_value({Obj}) -> 
+	Value = proplists:get_value(<<"value">>, Obj), 
+	Value.
 
 %The above erlang datastructure corresponds to the following json
 %"{ 
