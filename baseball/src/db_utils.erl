@@ -1,6 +1,5 @@
 -module (db_utils).
 -export ([query/1, query/2, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4,get_row_value/1]).
-
 -define(BASE_ADDRESS,"http://localhost:5984/baseball").
 
 connect_to_db() ->
@@ -10,7 +9,9 @@ connect_to_db() ->
 
 query(Query) ->
 	{ok, {{Version, 200, ReasonPhrase}, Headers, AnswerFromDB}} = httpc:request(?BASE_ADDRESS ++ Query),
-	jiffy:decode(AnswerFromDB).
+	{Data} = jiffy:decode(AnswerFromDB),
+	{_, Rows} = proplists:lookup(<<"rows">>, Data),
+	{[{<<"rows">>,lists:map(fun get_row_value/1, Rows)}]}.
 	
 query(Query,Key) ->
 	JSONKey = binary_to_list(jiffy:encode(Key)),
