@@ -12,6 +12,9 @@ query(Query) ->
 	{ok, {{Version, 200, ReasonPhrase}, Headers, AnswerFromDB}} = httpc:request(?BASE_ADDRESS ++ Query),
 	jiffy:decode(AnswerFromDB).
 	
+query(Query,StartKey,EndKey) ->
+	query(Query ++ "?startkey=" ++ jiffy:endcode(StartKey) ++ "&endkey=" ++ jiffy:endcode(EndKey)).
+	
 store_message(Message,Group,Sender,{time,Hour,Minute,Second}) ->
 	put_to_db({[
 		{<<"type">>, "message"},
