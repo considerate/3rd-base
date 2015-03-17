@@ -2,6 +2,7 @@
 -export ([init/2]).
 
 init(Req, Opts) ->
+	{ok, _Tokendata} = auth_ball:authenticate(Req),
 	Thread = cowboy_req:binding(threadid, Req),
 	QS = cowboy_req:parse_qs(Req),
 	After = proplists:get_value(<<"after">>,QS),
@@ -12,9 +13,7 @@ init(Req, Opts) ->
 			StartKey = [Thread, After]
 	end,
 	EndKey = [Thread,{[]}],
-	{Data} = db_utils:query("/_design/Messages/_view/message_history", StartKey, EndKey),
-	{_, Rows} = proplists:lookup(<<"rows">>, Data),
-	JSONData = {[{<<"rows">>,lists:map(fun get_row_value/1, Rows)}]},
+	JSONData = db_utils:query("/_design/Messages/_view/message_history", StartKey, EndKey),
 	BodyText = jiffy:encode(JSONData),
 	Headers = [{<<"Content-Type">>,<<"application/json">>}],
 	Response = cowboy_req:reply(200,

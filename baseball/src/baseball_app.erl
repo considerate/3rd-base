@@ -11,7 +11,8 @@ start(_Type, _Args) ->
         {'_', [
         	{"/", hello_handler, []},
             {"/threads/:threadid/messages", message_history_handler, []},
-        	{"/users/me/threads", get_groups_handler,[]}
+        	{"/users/me/threads", my_threads_handler,[]},
+            {"/threads/:threadid", thread_handler,[]}
         ]}
     ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8081}],
