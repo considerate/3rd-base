@@ -1,5 +1,5 @@
 -module (db_utils).
--export ([query/1,connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4]).
+-export ([query/1, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4]).
 
 -define(BASE_ADDRESS,"http://localhost:5984/baseball").
 
@@ -13,7 +13,9 @@ query(Query) ->
 	jiffy:decode(AnswerFromDB).
 	
 query(Query,StartKey,EndKey) ->
-	query(Query ++ "?startkey=" ++ jiffy:endcode(StartKey) ++ "&endkey=" ++ jiffy:endcode(EndKey)).
+	Start = binary_to_list(jiffy:encode(StartKey)),
+	End = binary_to_list(jiffy:encode(EndKey)),
+	query(Query ++ "?startkey=" ++ Start ++ "&endkey=" ++ End).
 	
 store_message(Message,Group,Sender,{time,Hour,Minute,Second}) ->
 	put_to_db({[
