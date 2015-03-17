@@ -10,7 +10,8 @@ start(_Type, _Args) ->
     Dispatch = cowboy_router:compile([
         {'_', [
         	{"/", hello_handler, []},
-            {"/threads/:threadid/messages", message_history_handler, []}
+            {"/threads/:threadid/messages", message_history_handler, []},
+        	{"/user/me/threads", new_grop_handler,[]}
         ]}
     ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8081}],
