@@ -25,6 +25,7 @@ store_message(Message,Group,Sender,{time,Hour,Minute,Second}) ->
 		{<<"time">>,[Hour,Minute,Second]}
 	]}).	
 
+
 %get_messages(Group,{time,StartHour,StartMinut,StartSecond},{time,EndHour,EndMinut,EndSecond}) ->
 %	query("/_design/Messages/_view/message_history?startkey =\"">>,jiffy:encode([Group,[StartHour,StartMinut,StartSecond]]) ++ "\"&endkey=\""++ "[" ++ Group ++ ",[" ++ EndHour ++ "," ++ EndMinut ++ "," ++ EndSecond ++ "]" ++ "]" ++ "]" ++ "\"").
 
