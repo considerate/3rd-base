@@ -9,7 +9,8 @@ start(_Type, _Args) ->
 	%Change the configuration of baseball by changing the tupple bellow
     Dispatch = cowboy_router:compile([
         {'_', [
-        	{"/", hello_handler, []}
+        	{"/", hello_handler, []},
+        	{"/user/me/threads", new_grop_handler,[]}
         ]}
     ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8081}],
