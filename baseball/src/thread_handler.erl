@@ -7,17 +7,23 @@ init(Req,Opts) ->
 			Thread = cowboy_req:binding(threadid, Req),
 			Uid = proplists:get_value(<<"id">>, Data),
 			JSONData = db_utils:fetch(Thread),
-			
-			% TODO: Add logic for not member of thread
-			BodyText = jiffy:encode(JSONData),
-			ResponseHeaders = [{<<"Content-Type">>,<<"application/json">>}],
-			Response = cowboy_req:reply(200,
-				ResponseHeaders,
-				BodyText,
-				Req
-			),
-			{ok, Response, Opts};
+			{ThreadData} = JSONData,
+			UsersInThread = proplists:get_value(<<"users">>, ThreadData),
+			IsInThread = lists:any(fun(X) ->  Uid =:= X end, UsersInThread),
+			case IsInThread of
+				true ->
+					BodyText = jiffy:encode(JSONData),
+					ResponseHeaders = [{<<"Content-Type">>,<<"application/json">>}],
+					Response = cowboy_req:reply(200,
+						ResponseHeaders,
+						BodyText,
+						Req
+					),
+					{ok, Response, Opts};
+				false -> 
+					cowboy_req:reply(401,Req)
+			end;
 		Error ->
 			io:format("ERROR: ~p", [Error]),
 			cowboy_req:reply(401,Req)
-	end.
+	end. 
