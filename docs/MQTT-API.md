@@ -6,7 +6,7 @@ The client connects with username field with the user's id and the password fiel
 
 ### Required actions on login
 
-### Subscibe to these topics:
+### Subscribe to these topics:
 
 - `"users/<me>/newthread"`
 - `"users/<me>/threadmembers"`
