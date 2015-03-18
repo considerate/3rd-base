@@ -19,15 +19,26 @@ query(Query) ->
 	{Data} = jiffy:decode(Body),
 	{_, Rows} = proplists:lookup(<<"rows">>, Data),
 	{[{<<"rows">>,lists:map(fun get_row_value/1, Rows)}]}.
+
+%queies cdb with a base quary and a list of supplied query parameters.
+%Key must be a string
+%Param must be parsable by jiffy
+query(QueryBase,[{Key0,Param0}|T]) ->
+	
+	Query0 = "?" ++ Key0 ++ "=" ++ binary_to_list(jiffy:encode(Param0)),
+	QueryN = lists:foldl(
+	fun({KeyK,ParamK},QueryK) ->
+		QueryK ++ "&" ++ KeyK ++ "=" ++ binary_to_list(jiffy:encode(ParamK))
+	end,Query0,T),
+	query(QueryBase ++ QueryN);
 	
 query(Query,Key) ->
-	JSONKey = binary_to_list(jiffy:encode(Key)),
-	query(Query ++ "?key=" ++ JSONKey).
+	query(Query,[{"key",Key}]).
 	
 query(Query,StartKey,EndKey) ->
 	Start = binary_to_list(jiffy:encode(StartKey)),
 	End = binary_to_list(jiffy:encode(EndKey)),
-	query(Query ++ "?startkey=" ++ Start ++ "&endkey=" ++ End).
+	query(Query, [{"startkey",Start},{"endkey",End}]).
 	
 store_message(Message,Group,Sender,{time,Hour,Minute,Second}) ->
 	put_to_db({[
@@ -36,7 +47,7 @@ store_message(Message,Group,Sender,{time,Hour,Minute,Second}) ->
 		{<<"group">>,Group},
 		{<<"from">>,Sender},
 		{<<"time">>,[Hour,Minute,Second]}
-	]}).	
+	]}).
 
 %get_messages(Group,{time,StartHour,StartMinut,StartSecond},{time,EndHour,EndMinut,EndSecond}) ->
 %	query("/_design/Messages/_view/message_history?startkey =\"">>,jiffy:encode([Group,[StartHour,StartMinut,StartSecond]]) ++ "\"&endkey=\""++ "[" ++ Group ++ ",[" ++ EndHour ++ "," ++ EndMinut ++ "," ++ EndSecond ++ "]" ++ "]" ++ "]" ++ "\"").
