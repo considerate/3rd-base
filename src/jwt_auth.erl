@@ -16,7 +16,7 @@ verify(Username, Token) ->
 		{Data} -> 
 			case proplists:get_value(<<"id">>, Data) of
 				Username ->
-					{ok, Data};
+					ok;
 				_ -> 
 					{error, forbidden}
 			end;

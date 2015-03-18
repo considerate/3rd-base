@@ -20,7 +20,6 @@ mnesia(Action) -> mqtt_server:mnesia(Action).
 
 apply_setting(Setting) -> mqtt_server:apply_setting(Setting).
 
-
 %% @doc Get address of this node.
 -spec get_address() -> {ok, string()} | {error, not_found}.
 get_address() ->
@@ -38,6 +37,11 @@ set_address(Address) -> mqtt_server:set_address(Address).
 
 -define (CONTEXT, mqtt_server).
 
+-define(ID_REGEX, "([^/]+)").
+-define(THREAD_REGEX, snd(re:compile("thread/" ++ ?ID_REGEX))).
+
+snd({_X,Y}) -> Y.
+
 %% mqtt_protocol context
 -record(?CONTEXT, {
 		client_id :: binary(),
@@ -51,6 +55,7 @@ set_address(Address) -> mqtt_server:set_address(Address).
 		timestamp :: timestamp()
 }).
 
+
 -type context() :: #?CONTEXT{}.
 
 -spec init(params()) -> {noreply, context(), timeout()}.
@@ -61,10 +66,14 @@ init(Params) ->
 		  {reply, mqtt_message(), context(), timeout()} |
 		  {noreply, context(), timeout()} |
 		  {stop, Reason :: term()}.
-handle_message(Message=#mqtt_publish{topic= <<"newchat">>}, Context) ->
-	io:format("New Chat message ~p", [Message#mqtt_publish.payload]),
+handle_message(Message=#mqtt_publish{topic = Topic, payload= Body}, Context=#?CONTEXT{session=Session}) when is_pid(Session) ->
+	case re:run(Topic, ?THREAD_REGEX, [{capture,all_but_first,binary}]) of
+		{match, [ThreadId]} ->
+			{ok,State} = gen_server:call(Session,state),
+			Username = mqtt_session:username(State)
+	end,
 	mqtt_server:handle_message(Message,Context);
-handle_message(Message,Context) -> 
+handle_message(Message,Context) ->
 	mqtt_server:handle_message(Message,Context).
 
 -spec handle_event(Event :: term(), context()) ->
