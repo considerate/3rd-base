@@ -6,4 +6,7 @@ authenticate(Req) ->
     Headers = cowboy_req:headers(Req),
     {_,Auth}=proplists:lookup(<<"authorization">>,Headers),
     <<"Bearer ", Token/binary>> = Auth,
-    ejwt:parse_jwt(Token, ?SECRET).
+    case ejwt:parse_jwt(Token, ?SECRET) of
+    	{Data} -> {ok, Data};
+    	Error -> {error, Error}
+    end.

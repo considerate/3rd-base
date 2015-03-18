@@ -1,5 +1,5 @@
 -module (db_utils).
--export ([query/1, query/2, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4,get_row_value/1]).
+-export ([query/1, query/2, query/3, connect_to_db/0,put_to_db/1,run_test_put/0,store_message/4,get_row_value/1,fetch/1]).
 -define(BASE_ADDRESS,"http://localhost:5984/baseball").
 
 connect_to_db() ->
@@ -7,9 +7,16 @@ connect_to_db() ->
 	%TODO: ADD CODE TO START COUCH DB IF NOT STARTED
 	_ = inets:start().
 
+fetch(Id) when is_binary(Id) ->
+	fetch(binary_to_list(Id));
+fetch(Id) when is_list(Id)->
+	io:format("~p", [Id]),
+	{ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ "/" ++ Id),
+	jiffy:decode(Body).
+
 query(Query) ->
-	{ok, {{Version, 200, ReasonPhrase}, Headers, AnswerFromDB}} = httpc:request(?BASE_ADDRESS ++ Query),
-	{Data} = jiffy:decode(AnswerFromDB),
+	{ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ Query),
+	{Data} = jiffy:decode(Body),
 	{_, Rows} = proplists:lookup(<<"rows">>, Data),
 	{[{<<"rows">>,lists:map(fun get_row_value/1, Rows)}]}.
 	
