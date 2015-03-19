@@ -43,7 +43,7 @@
         var entry = div.firstChild;
         entry.querySelector('img').src = users[me.id].picture;
         entry.querySelector('h2').innerText = msg.from;
-        entry.querySelector('p').innerText = msg.text;
+        entry.querySelector('p').innerText = msg.body;
         var history = document.querySelector('.history');
         history.insertBefore(entry, history.firstChild);
       }
@@ -71,11 +71,7 @@
         var input = ev.target.querySelector('[type=input]');
         var msg = {from: me.id,
                    to: me.id,
-                   text: input.value};
-
-        if (!msg.text) {
-          return;
-        }
+                   body: input.value};
 
         input.value = '';
 

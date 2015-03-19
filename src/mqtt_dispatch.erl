@@ -52,7 +52,8 @@ snd({_X,Y}) -> Y.
 		overloaded=false,
 		load_balancing = none,
 		timeout = 10000 :: timeout(),
-		timestamp :: timestamp()
+		timestamp :: timestamp(),
+		data = [] :: [proplists:property()]
 }).
 
 
@@ -60,19 +61,38 @@ snd({_X,Y}) -> Y.
 
 -spec init(params()) -> {noreply, context(), timeout()}.
 init(Params) ->
-	mqtt_server:init(Params).
+	random:seed(erlang:now()),
+	mqtt_server:init(Params ++ [
+		{data, [
+			{objectid, objectid:objectid()}
+		]}
+	]).
+
 
 -spec handle_message(mqtt_message(), context()) ->
 		  {reply, mqtt_message(), context(), timeout()} |
 		  {noreply, context(), timeout()} |
 		  {stop, Reason :: term()}.
-handle_message(Message=#mqtt_publish{topic = Topic, payload= Body}, Context=#?CONTEXT{session=Session}) when is_pid(Session) ->
+handle_message(
+		Message=#mqtt_publish{topic = Topic, payload=Payload}, 
+		Context=#?CONTEXT{session=Session, data=Data}
+	) when is_pid(Session) ->
+	io:format("Hi there~n"),
+	{_, ObjectId} = proplists:lookup(objectid, Data),
+	{Id, NextId} = ObjectId,
 	case re:run(Topic, ?THREAD_REGEX, [{capture,all_but_first,binary}]) of
 		{match, [ThreadId]} ->
+			{JSON} = jiffy:decode(Payload),
+			{_,Body} = proplists:lookup(<<"body">>, JSON),
 			{ok,State} = gen_server:call(Session,state),
-			Username = mqtt_session:username(State)
-	end,
-	mqtt_server:handle_message(Message,Context);
+			Username = mqtt_session:username(State),
+			db_utils:store_message(Id, Body, ThreadId, Username),
+			NewData = [{objectid, NextId()}|proplists:delete(objectid,Data)],
+			io:format("Updated data ~p ~n",[NewData]),
+			mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData});
+		_ -> 
+			mqtt_server:handle_message(Message,Context)
+	end;
 handle_message(Message,Context) ->
 	mqtt_server:handle_message(Message,Context).
 
