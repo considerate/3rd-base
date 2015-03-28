@@ -14,11 +14,16 @@ verify(Username, Token) ->
     	invalid -> {error, forbidden};
     	expired -> {error, forbidden};
 		{Data} -> 
-			case proplists:get_value(<<"id">>, Data) of
-				Username ->
+			case proplists:get_value(<<"admin">>,Data) of
+				true ->
 					ok;
-				_ -> 
-					{error, forbidden}
+				false ->
+					case proplists:get_value(<<"id">>, Data) of
+						Username ->
+							ok;
+						_ -> 
+							{error, forbidden}
+					end
 			end;
 		Error ->
 			{error, Error}
