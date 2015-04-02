@@ -11,23 +11,23 @@
 %% @doc Verify credential.
 verify(Username, Token) ->
     case ejwt:parse_jwt(Token, ?SECRET) of
-    	invalid -> {error, forbidden};
-    	expired -> {error, forbidden};
-		{Data} -> 
-			case proplists:get_value(<<"admin">>,Data) of
-				true ->
-					ok;
-				false ->
-					case proplists:get_value(<<"id">>, Data) of
-						Username ->
-							ok;
-						_ -> 
-							{error, forbidden}
-					end
-			end;
-		Error ->
-			{error, Error}
-	end.
+        invalid -> {error, forbidden};
+        expired -> {error, forbidden};
+        {Data} ->
+            case proplists:get_value(<<"admin">>,Data) of
+                true ->
+                    ok;
+                false ->
+                    case proplists:get_value(<<"id">>, Data) of
+                        Username ->
+                            ok;
+                        _ ->
+                            {error, forbidden}
+                    end
+            end;
+        Error ->
+            {error, Error}
+    end.
 
 %%
 %% Unit Tests
