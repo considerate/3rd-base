@@ -97,22 +97,22 @@ online_status(Message,Context,Status,UserId,ClientId) ->
                        true ->
                             mqtt_server:handle_message(Message,Context);
                        false ->
-                           ok
+                            {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
                    end;
                _ ->
-                 ok
+                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
            end;
         _ ->
             case update_status(Status,UserId,ClientId) of
                 {atomic, {Status,_Clients}} ->
-                    ok;
+                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
+                    ;
                 {atomic, {_PrevStatus,_Clients}} ->
                     mqtt_server:handle_message(Message,Context);
                 _ ->
-                    ok
+                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
             end
     end.
-
 
 update_status(Status,UserId,ClientId) ->
     Transaction = fun() ->
@@ -144,6 +144,10 @@ logoff(UserId,ClientId) ->
         end
     end,
     mnesia:transaction(Transaction).
+
+
+
+
 -spec handle_message(mqtt_message(), context()) ->
     {reply, mqtt_message(), context(), timeout()} |
     {noreply, context(), timeout()} |
