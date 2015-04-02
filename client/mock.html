@@ -81,6 +81,16 @@
       }, true);
 
     }, false);
+
+
+    function gotApplePushToken(token) {
+        var node = document.createTextNode(token);
+	document.querySelector('body').appendChild(node);
+    }
+
+    function gotGooglePushToken(token) {
+
+    }
   </script>
 
   <style>
