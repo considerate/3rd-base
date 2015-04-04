@@ -72,11 +72,6 @@ init(Params) ->
                                        ]}
                                ]).
 
-
--spec is_empty(sets:set()) -> true | false.
-is_empty(Set) ->
-    sets:is_subset(Set,sets:new()).
-
 persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     {_, ObjectId} = proplists:lookup(objectid, Data),
     {Id, NextId} = ObjectId,
@@ -88,26 +83,20 @@ persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData}).
 
 online_status(Message,Context,Status,UserId,ClientId) ->
-    io:format("online/~p",[UserId]),
+    io:format("online/~p :: ~p",[UserId, Status]),
     case Status of
         <<"offline">> ->
-           case logoff(UserId,ClientId) of
-               {atomic, Clients} ->
-                   case is_empty(Clients) of
-                       true ->
-                            mqtt_server:handle_message(Message,Context);
-                       false ->
-                            {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
-                   end;
-               _ ->
+            case logoff(UserId,ClientId) of
+                {atomic, NumClients} when NumClients =:= 0 ->
+                    % No more clients, let subscribers know this user is
+                    % offline now
+                    mqtt_server:handle_message(Message,Context);
+                _ ->
                     {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
-           end;
+            end;
         _ ->
             case update_status(Status,UserId,ClientId) of
-                {atomic, {Status,_Clients}} ->
-                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
-                    ;
-                {atomic, {_PrevStatus,_Clients}} ->
+                {atomic, {PrevStatus,_Clients}} when PrevStatus =/= Status ->
                     mqtt_server:handle_message(Message,Context);
                 _ ->
                     {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
@@ -115,34 +104,35 @@ online_status(Message,Context,Status,UserId,ClientId) ->
     end.
 
 update_status(Status,UserId,ClientId) ->
-    Transaction = fun() ->
-        case mnesia:wread({mqtt_presence,UserId}) of
-            [P=#mqtt_presence{clients=Clients,last_status=PrevStatus}] ->
-                NewClients = sets:add_element(ClientId,Clients),
-                mnesia:write(P#mqtt_presence{clients=NewClients,last_status=Status}),
-                {PrevStatus,NewClients}
-                ;
-            _DoesNotExist ->
-              Clients = sets:new(),
-              NewClients = sets:add_element(ClientId, Clients),
-              mnesia:write(#mqtt_presence{user=UserId,clients=NewClients,last_status=Status}),
-              {none,NewClients}
-        end
+    Transaction =
+    fun() ->
+            case mnesia:wread({mqtt_presence,UserId}) of
+                [P=#mqtt_presence{clients=Clients,last_status=PrevStatus}] ->
+                    NewClients = sets:add_element(ClientId,Clients),
+                    mnesia:write(P#mqtt_presence{clients=NewClients,last_status=Status}),
+                    {PrevStatus,NewClients}
+                    ;
+                _DoesNotExist ->
+                    Clients = sets:new(),
+                    NewClients = sets:add_element(ClientId, Clients),
+                    mnesia:write(#mqtt_presence{user=UserId,clients=NewClients,last_status=Status}),
+                    {none,NewClients}
+            end
     end,
     mnesia:transaction(Transaction).
 
 logoff(UserId,ClientId) ->
     Transaction = fun() ->
-        case mnesia:wread({mqtt_presence,UserId}) of
-            [P=#mqtt_presence{clients=Clients}] ->
-                NewClients = sets:del_element(ClientId,Clients),
-                mnesia:write(P#mqtt_presence{clients=NewClients}),
-                NewClients
-                ;
-            _DoesNotExist ->
-                mnesia:abort("No such presence object")
-        end
-    end,
+                          case mnesia:wread({mqtt_presence,UserId}) of
+                              [P=#mqtt_presence{clients=Clients}] ->
+                                  NewClients = sets:del_element(ClientId,Clients),
+                                  mnesia:write(P#mqtt_presence{clients=NewClients}),
+                                  sets:size(NewClients)
+                                  ;
+                              _DoesNotExist ->
+                                  mnesia:abort("No such presence object")
+                          end
+                  end,
     mnesia:transaction(Transaction).
 
 
