@@ -4,14 +4,21 @@
   <meta charset="utf-8">
   <title>MOCKelind</title>
   <!--script src="//connect.facebook.net/en_US/all.js"></script-->
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="bundle.js"></script>
   <script>
     window.addEventListener('load', function() {
       var mqtt    = require('mqtt');
-      var client  = mqtt.connect('ws://' + (location.hash.substr(1) || '127.0.0.1:8081'),
-                                 {protocolId: 'MQIsdp',
-                                  protocolVersion: 3});
+      var id = 'ida';//prompt('What is your user ID?');
+
+      var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImlkYSIsImV4cCI6MTQzMzg5NDQwMH0.yzwpXD183BtFHExljLyB01wM1PoAf4ZWgWMW_qSIKDk';
+
+      var client  = mqtt.connect('ws://' + (location.hash.substr(1) || '127.0.0.1:8081'), {
+                                  protocolId: 'MQIsdp',
+                                  protocolVersion: 3,
+                                  username: id,
+                                  password: token
+                                });
 
       // TODO How to presence?!
       //client.subscribe('presence');
@@ -19,11 +26,14 @@
 
       var users = {};
 
+
+
       // TODO Authentication
-      var me = {id: Number(prompt('What is your user ID?')),
+
+      var me = {id: id,
                 picture: 'http://placekitten.com/'+(200 + 20*Math.random()).toFixed()
                                               +'/'+(200 + 20*Math.random()).toFixed(),
-                name: 'Me'};
+                name: id};
       users[me.id] = me;
 
       function pushChatHistory(msg) {
@@ -31,9 +41,9 @@
         div.innerHTML = '<div class="entry"><img>' +
                         '<h2></h2><p></p></div>';
         var entry = div.firstChild;
-        entry.querySelector('img').src = users[msg.from].picture;
-        entry.querySelector('h2').innerText = users[msg.from].name;
-        entry.querySelector('p').innerText = msg.text;
+        entry.querySelector('img').src = users[me.id].picture;
+        entry.querySelector('h2').innerText = msg.from;
+        entry.querySelector('p').innerText = msg.body;
         var history = document.querySelector('.history');
         history.insertBefore(entry, history.firstChild);
       }
@@ -43,7 +53,7 @@
       }
 
       function sendChatMessage(msg) {
-        client.publish(chatTopic(msg.to), JSON.stringify(msg));
+        client.publish('thread/1', JSON.stringify(msg));
       }
 
       client.on('message', function (topic, msgRaw) {
@@ -52,28 +62,35 @@
         pushChatHistory(msg);
       });
 
-      client.subscribe(chatTopic(me.id));
+      client.subscribe('thread/1');
 
       document.querySelector('.msg').addEventListener('submit', function(ev) {
         
         ev.preventDefault();
+        console.log(me);
         var input = ev.target.querySelector('[type=input]');
         var msg = {from: me.id,
                    to: me.id,
-                   text: input.value};
-
-        if (!msg.text) {
-          return;
-        }
+                   body: input.value};
 
         input.value = '';
 
-        pushChatHistory(msg);
+        //pushChatHistory(msg);
         sendChatMessage(msg);
         
       }, true);
 
     }, false);
+
+
+    function gotApplePushToken(token) {
+        var node = document.createTextNode(token);
+	document.querySelector('body').appendChild(node);
+    }
+
+    function gotGooglePushToken(token) {
+
+    }
   </script>
 
   <style>
@@ -86,7 +103,7 @@
       text-align: center;
     }
     html, body { padding: 0; margin: 0; }
-    body { padding: 0 10px; }
+    body { padding-left: 10px; padding-right:10px; padding-top:20px; }
 
     .msg input {
       font: 24pt 'Helvetica Neue', sans-serif;

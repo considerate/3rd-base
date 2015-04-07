@@ -1,5 +1,6 @@
 -module(objectid).
 -export([objectid/2, objectid/1, objectid/0, objectid_time/1]).
+-export_type([objectid/0]).
 
 -define(MAX_INC, round(math:pow(2,24)-1)).
 
@@ -24,7 +25,8 @@ objectid(Pid) ->
 - spec nextobjectid(pid(), integer()) -> {objectid(), fun(()-> objectid())}.
 nextobjectid(Pid,Inc) -> 
 	fun() ->
-		{objectid(Pid,Inc rem ?MAX_INC), nextobjectid(Pid,Inc+1)}
+		IncMod = Inc rem ?MAX_INC,
+		{objectid(Pid,IncMod), nextobjectid(Pid,IncMod+1)}
 	end.	
 
 % Tells the time the object was created, {{year1970(), month(), day()}, time()}

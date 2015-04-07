@@ -19,11 +19,9 @@ All threads that you are a part of.
 {
     "rows": [{
         "_id": "<thread id>",
-        "users": [{
-            "_id": "<user id>",
-            "name": "<user name>"
-            },
-            ...
+        "users": [
+        "<user id>"
+        ...
         ]
     },
     ...
@@ -36,11 +34,11 @@ Expected Result:
 ```json
 {
     "_id": "<thread id>",
-    "users": [{
-        "_id": "<user id>",
-        "name": "<user name>"
-        },
+    "users": [
+        "<user id>"
         ...
+    ],
+    ...
     ]
 }
 ```
