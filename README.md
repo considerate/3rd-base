@@ -3,7 +3,10 @@
 
 <img src="http://thefantasygeek.com/wp-content/uploads/2010/03/Position-Profile-Third-Base.jpg" height="90">
 
-Third party implementation of Friendbase Chat Back-end
+Implementation of Friendbase's third-party chat backend. To be used to enable
+Friendbase chat clients of various shapes and sizes to all come together and
+work towards the larger goals in life -- making it easier for nine year olds to
+play virtual four-in-a-row.
 
 ## Usage
 
