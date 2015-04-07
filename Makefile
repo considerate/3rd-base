@@ -54,6 +54,7 @@ clean: delete-deps
 	rm -rf *.dump
 	rm -rf test/*.beam
 	@$(REBAR) clean
+	rm -rf rel/3rd-base
 
 # Clear all data.
 reset:
