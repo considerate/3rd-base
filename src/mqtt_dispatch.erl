@@ -48,17 +48,17 @@ snd({_X,Y}) -> Y.
 
 %% mqtt_protocol context
 -record(?CONTEXT, {
-           client_id :: binary(),
-           auth :: module(),
-           session :: pid(),
-           valid_keep_alive = {1800, 3600} :: {MinSec :: integer(), MaxSec :: integer()},
-           when_overloaded = drop :: drop | accept,
-           overloaded=false,
-           load_balancing = none,
-           timeout = 10000 :: timeout(),
-           timestamp :: timestamp(),
-           data = [] :: [proplists:property()]
-          }).
+        client_id :: binary(),
+        auth :: module(),
+        session :: pid(),
+        valid_keep_alive = {1800, 3600} :: {MinSec :: integer(), MaxSec :: integer()},
+        when_overloaded = drop :: drop | accept,
+        overloaded=false,
+        load_balancing = none,
+        timeout = 10000 :: timeout(),
+        timestamp :: timestamp(),
+        data = [] :: [proplists:property()]
+        }).
 
 
 -type context() :: #?CONTEXT{}.
@@ -66,11 +66,7 @@ snd({_X,Y}) -> Y.
 -spec init(params()) -> {noreply, context(), timeout()}.
 init(Params) ->
     random:seed(erlang:now()),
-    mqtt_server:init(Params ++ [
-                                {data, [
-                                        {objectid, objectid:objectid()}
-                                       ]}
-                               ]).
+    mqtt_server:init(Params ++ [{data, [{objectid, objectid:objectid()}]}]).
 
 persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     {_, ObjectId} = proplists:lookup(objectid, Data),
@@ -104,8 +100,7 @@ online_status(Message,Context,Status,UserId,ClientId) ->
     end.
 
 update_status(Status,UserId,ClientId) ->
-    Transaction =
-    fun() ->
+    Transaction = fun() ->
             case mnesia:wread({mqtt_presence,UserId}) of
                 [P=#mqtt_presence{clients=Clients,last_status=PrevStatus}] ->
                     NewClients = sets:add_element(ClientId,Clients),
@@ -123,29 +118,26 @@ update_status(Status,UserId,ClientId) ->
 
 logoff(UserId,ClientId) ->
     Transaction = fun() ->
-                          case mnesia:wread({mqtt_presence,UserId}) of
-                              [P=#mqtt_presence{clients=Clients}] ->
-                                  NewClients = sets:del_element(ClientId,Clients),
-                                  mnesia:write(P#mqtt_presence{clients=NewClients}),
-                                  sets:size(NewClients)
-                                  ;
-                              _DoesNotExist ->
-                                  mnesia:abort("No such presence object")
-                          end
-                  end,
+            case mnesia:wread({mqtt_presence,UserId}) of
+                [P=#mqtt_presence{clients=Clients}] ->
+                    NewClients = sets:del_element(ClientId,Clients),
+                    mnesia:write(P#mqtt_presence{clients=NewClients}),
+                    sets:size(NewClients)
+                    ;
+                _DoesNotExist ->
+                    mnesia:abort("No such presence object")
+            end
+    end,
     mnesia:transaction(Transaction).
-
-
-
 
 -spec handle_message(mqtt_message(), context()) ->
     {reply, mqtt_message(), context(), timeout()} |
     {noreply, context(), timeout()} |
     {stop, Reason :: term()}.
 handle_message(
-  Message=#mqtt_publish{topic = Topic, payload=Payload},
-  Context=#?CONTEXT{session=Session, data=Data,client_id=ClientId}
- ) when is_pid(Session) ->
+            Message=#mqtt_publish{topic = Topic, payload=Payload},
+            Context=#?CONTEXT{session=Session, data=Data,client_id=ClientId}
+            ) when is_pid(Session) ->
     RegOpts = [{capture,all_but_first,binary}],
     case re:run(Topic, ?THREAD_REGEX, RegOpts) of
         {match, [ThreadId]} ->
