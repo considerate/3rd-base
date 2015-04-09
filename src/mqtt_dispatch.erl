@@ -16,10 +16,14 @@
 
 -record(mqtt_presence, {user,clients,last_status}).
 
+-create_mnesia_tables({mnesia,[create_prescence]}).
+
 %% @doc Mnesia table manipulations.
+mnesia(create_prescence) ->
+    mnesia:create_table(mqtt_presence, [{ram_copies, [node()]}, {attributes, record_info(fields,mqtt_presence)}, {type,set}]),
+    ok = mnesia:wait_for_tables([mqtt_presence], 6000);
 mnesia(Action) ->
-    mqtt_server:mnesia(Action),
-    mnesia:create_table(mqtt_presence, [{ram_copies, [node()]}, {attributes, record_info(fields,mqtt_presence)}, {type,set}]).
+    mqtt_server:mnesia(Action).
 
 apply_setting(Setting) -> mqtt_server:apply_setting(Setting).
 
@@ -75,11 +79,9 @@ persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     Username = mqtt_session:username(State),
     db_utils:store_message(Id, Body, ThreadId, Username),
     NewData = [{objectid, NextId()}|proplists:delete(objectid,Data)],
-    io:format("Updated data ~p ~n",[NewData]),
     mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData}).
 
 online_status(Message,Context,Status,UserId,ClientId) ->
-    io:format("online/~p :: ~p",[UserId, Status]),
     case Status of
         <<"offline">> ->
             case logoff(UserId,ClientId) of
@@ -101,7 +103,7 @@ online_status(Message,Context,Status,UserId,ClientId) ->
 
 update_status(Status,UserId,ClientId) ->
     Transaction = fun() ->
-            case mnesia:wread({mqtt_presence,UserId}) of
+            case mnesia:read(mqtt_presence,UserId,write) of
                 [P=#mqtt_presence{clients=Clients,last_status=PrevStatus}] ->
                     NewClients = sets:add_element(ClientId,Clients),
                     mnesia:write(P#mqtt_presence{clients=NewClients,last_status=Status}),
@@ -147,6 +149,8 @@ handle_message(
         _ ->
             case re:run(Topic, ?ONLINE_REGEX,RegOpts) of
                 {match, [UserId]} ->
+                    io:format("ENTERED HERE: online/~p~n", [UserId]),
+                    io:format("Message ~p~n", [Message]),
                     {JSON} = jiffy:decode(Payload),
                     Status = proplists:get_value(<<"status">>, JSON),
                     online_status(Message,Context,Status,UserId,ClientId);
