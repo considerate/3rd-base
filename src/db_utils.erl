@@ -1,6 +1,6 @@
 -module (db_utils).
 -export ([query/1, query/2, query/3, connect_to_db/0,store_message/4,get_row_value/1,fetch/1]).
--define(BASE_ADDRESS,"http://localhost:5984/baseball").
+-define(BASE_ADDRESS,"http://127.0.0.1:5984/baseball").
 
 
 
