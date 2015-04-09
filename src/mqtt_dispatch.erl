@@ -44,8 +44,8 @@ set_address(Address) -> mqtt_server:set_address(Address).
 
 -define (CONTEXT, mqtt_server).
 
--define(ID_REGEX, "([^/]+)").
--define(THREAD_REGEX, snd(re:compile("thread/" ++ ?ID_REGEX))).
+-define(ID_REGEX, "([A-F\\d]+)").
+-define(THREAD_REGEX, snd(re:compile("threads/" ++ ?ID_REGEX ++ "/messages"))).
 -define(ONLINE_REGEX, snd(re:compile("online/" ++ ?ID_REGEX))).
 
 snd({_X,Y}) -> Y.
@@ -132,6 +132,14 @@ logoff(UserId,ClientId) ->
     end,
     mnesia:transaction(Transaction).
 
+runall(Subject, [{Name, RE} | REs], Options) ->
+    case re:run(Subject, RE, Options) of
+        {match, Captured} -> {Name, Captured};
+        nomatch -> runall(Subject, REs, Options)
+    end;
+runall(_Subject, [], _Options) ->
+    nomatch.
+
 -spec handle_message(mqtt_message(), context()) ->
     {reply, mqtt_message(), context(), timeout()} |
     {noreply, context(), timeout()} |
@@ -141,22 +149,20 @@ handle_message(
             Context=#?CONTEXT{session=Session, data=Data,client_id=ClientId}
             ) when is_pid(Session) ->
     RegOpts = [{capture,all_but_first,binary}],
-    case re:run(Topic, ?THREAD_REGEX, RegOpts) of
-        {match, [ThreadId]} ->
+    case runall(Topic, [{thread, ?THREAD_REGEX},
+                        {online, ?ONLINE_REGEX}], RegOpts) of
+        {thread, [ThreadId]} -> 
             {JSON} = jiffy:decode(Payload),
             Body = proplists:get_value(<<"body">>, JSON),
             persist_message(Message,Context,Session,ThreadId,Body,Data);
-        _ ->
-            case re:run(Topic, ?ONLINE_REGEX,RegOpts) of
-                {match, [UserId]} ->
-                    io:format("ENTERED HERE: online/~p~n", [UserId]),
-                    io:format("Message ~p~n", [Message]),
-                    {JSON} = jiffy:decode(Payload),
-                    Status = proplists:get_value(<<"status">>, JSON),
-                    online_status(Message,Context,Status,UserId,ClientId);
-                _ ->
-                    mqtt_server:handle_message(Message,Context)
-            end
+        {online, [UserId]} ->
+            io:format("ENTERED HERE: online/~p~n", [UserId]),
+            io:format("Message ~p~n", [Message]),
+            {JSON} = jiffy:decode(Payload),
+            Status = proplists:get_value(<<"status">>, JSON),
+            online_status(Message,Context,Status,UserId,ClientId);
+        nomatch ->
+            mqtt_server:handle_message(Message,Context)
     end;
 
 handle_message(Message,Context) ->
