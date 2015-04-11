@@ -3,3 +3,4 @@ ebin
 deps
 rel/fubar
 rel/3rd-base
+.rebar
