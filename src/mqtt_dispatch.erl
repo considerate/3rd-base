@@ -44,8 +44,9 @@ set_address(Address) -> mqtt_server:set_address(Address).
 
 -define (CONTEXT, mqtt_server).
 
--define(ID_REGEX, "([A-F\\d]+)").
--define(THREAD_REGEX, snd(re:compile("threads/" ++ ?ID_REGEX ++ "/messages"))).
+-define(ID_REGEX, "([A-F0-9]+)").
+-define(THREAD_ID_REGEX, "([a-zA-Z_0-9]+)").
+-define(THREAD_REGEX, snd(re:compile("threads/" ++ ?THREAD_ID_REGEX ++ "/messages"))).
 -define(ONLINE_REGEX, snd(re:compile("online/" ++ ?ID_REGEX))).
 
 snd({_X,Y}) -> Y.
