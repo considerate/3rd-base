@@ -1,10 +1,10 @@
-{application, thirdbase,
+{application,'3rd-base',
  [
   {description, "Scalable MQTT message broker"},
   {vsn, "3.0.0"},
   {registered, []},
   {applications, [kernel, stdlib, sasl, lager, cpg, mnesia, ssl, ranch, cowboy,fubar]},
-  {mod, {thirdbase_app, []}},
+  {mod, {'3rd-base_app', []}},
   {env, []}
  ]
 }.
