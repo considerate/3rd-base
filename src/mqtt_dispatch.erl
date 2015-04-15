@@ -11,8 +11,8 @@
 %%
 -export([init/1, handle_message/2, handle_event/2, terminate/2]).
 
--include("deps/fubar/include/fubar.hrl").
--include("deps/fubar/include/mqtt.hrl").
+-include_lib("fubar/include/fubar.hrl").
+-include_lib("fubar/include/mqtt.hrl").
 
 -record(mqtt_presence, {user,clients,last_status}).
 
