@@ -78,7 +78,7 @@ persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     {Id, NextId} = ObjectId,
     {ok,State} = gen_server:call(Session,state),
     Username = mqtt_session:username(State),
-    db_utils:store_message(Id, Body, ThreadId, Username),
+    '3rd-base_db_utils':store_message(Id, Body, ThreadId, Username),
     NewData = [{objectid, NextId()}|proplists:delete(objectid,Data)],
     mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData}).
 
