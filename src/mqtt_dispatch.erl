@@ -9,7 +9,7 @@
 %%
 %% mqtt_protocol callbacks
 %%
--export([init/1, handle_message/2, handle_event/2, terminate/2]).
+-export([init/1, handle_message/2, handle_event/2, handle_will_message/2, terminate/2]).
 
 -include_lib("fubar/include/fubar.hrl").
 -include_lib("fubar/include/mqtt.hrl").
@@ -17,11 +17,17 @@
 -record(mqtt_presence, {user,clients,last_status}).
 
 -create_mnesia_tables({mnesia,[create_prescence]}).
+-clear_mnesia_table({mnesia,[clear_table]}).
 
 %% @doc Mnesia table manipulations.
 mnesia(create_prescence) ->
     mnesia:create_table(mqtt_presence, [{ram_copies, [node()]}, {attributes, record_info(fields,mqtt_presence)}, {type,set}]),
     ok = mnesia:wait_for_tables([mqtt_presence], 6000);
+mnesia(clear_table) ->
+    Transaction = fun() ->
+        mnesia:clear_table(mqtt_presence)
+    end,
+    mnesia:transaction(Transaction);
 mnesia(Action) ->
     mqtt_server:mnesia(Action).
 
@@ -44,10 +50,10 @@ set_address(Address) -> mqtt_server:set_address(Address).
 
 -define (CONTEXT, mqtt_server).
 
--define(ID_REGEX, "([A-F0-9]+)").
+-define(USER_ID_REGEX, "([a-zA-Z0-9]+)").
 -define(THREAD_ID_REGEX, "([a-zA-Z_0-9]+)").
 -define(THREAD_REGEX, snd(re:compile("threads/" ++ ?THREAD_ID_REGEX ++ "/messages"))).
--define(ONLINE_REGEX, snd(re:compile("online/" ++ ?ID_REGEX))).
+-define(ONLINE_REGEX, snd(re:compile("online/" ++ ?USER_ID_REGEX))).
 
 snd({_X,Y}) -> Y.
 
@@ -82,23 +88,23 @@ persist_message(Message,Context,Session,ThreadId,Body,Data) ->
     NewData = [{objectid, NextId()}|proplists:delete(objectid,Data)],
     mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData}).
 
-online_status(Message,Context,Status,UserId,ClientId) ->
+online_status(Status,UserId,ClientId) ->
     case Status of
         <<"offline">> ->
             case logoff(UserId,ClientId) of
                 {atomic, NumClients} when NumClients =:= 0 ->
                     % No more clients, let subscribers know this user is
                     % offline now
-                    mqtt_server:handle_message(Message,Context);
-                _ ->
-                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
+                   reply;
+                _Otherwise ->
+                    noreply
             end;
         _ ->
             case update_status(Status,UserId,ClientId) of
                 {atomic, {PrevStatus,_Clients}} when PrevStatus =/= Status ->
-                    mqtt_server:handle_message(Message,Context);
+                    reply;
                 _ ->
-                    {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
+                   noreply
             end
     end.
 
@@ -141,27 +147,29 @@ runall(Subject, [{Name, RE} | REs], Options) ->
 runall(_Subject, [], _Options) ->
     nomatch.
 
+% Incoming messages
 -spec handle_message(mqtt_message(), context()) ->
     {reply, mqtt_message(), context(), timeout()} |
     {noreply, context(), timeout()} |
     {stop, Reason :: term()}.
 handle_message(
             Message=#mqtt_publish{topic = Topic, payload=Payload},
-            Context=#?CONTEXT{session=Session, data=Data,client_id=ClientId}
+            Context=#?CONTEXT{session=Session, data=Data, client_id=ClientId}
             ) when is_pid(Session) ->
     RegOpts = [{capture,all_but_first,binary}],
     case runall(Topic, [{thread, ?THREAD_REGEX},
                         {online, ?ONLINE_REGEX}], RegOpts) of
-        {thread, [ThreadId]} -> 
+        {online, [UserId]} ->
+            {JSON} = jiffy:decode(Payload),
+            Status = proplists:get_value(<<"status">>, JSON),
+            case online_status(Status,UserId,ClientId) of
+                reply -> mqtt_server:handle_message(Message,Context);
+                noreply -> {noreply, Context#?CONTEXT{timestamp=os:timestamp()}, Context#?CONTEXT.timeout}
+            end;
+        {thread, [ThreadId]} ->
             {JSON} = jiffy:decode(Payload),
             Body = proplists:get_value(<<"body">>, JSON),
             persist_message(Message,Context,Session,ThreadId,Body,Data);
-        {online, [UserId]} ->
-            io:format("ENTERED HERE: online/~p~n", [UserId]),
-            io:format("Message ~p~n", [Message]),
-            {JSON} = jiffy:decode(Payload),
-            Status = proplists:get_value(<<"status">>, JSON),
-            online_status(Message,Context,Status,UserId,ClientId);
         nomatch ->
             mqtt_server:handle_message(Message,Context)
     end;
@@ -169,6 +177,21 @@ handle_message(
 handle_message(Message,Context) ->
     mqtt_server:handle_message(Message,Context).
 
+handle_will_message(ClientId,Message=#mqtt_publish{topic=Topic, payload=Payload}) ->
+    RegOpts = [{capture,all_but_first,binary}],
+    case runall(Topic, [{online, ?ONLINE_REGEX}], RegOpts) of
+        {online, [UserId]} ->
+            {JSON} = jiffy:decode(Payload),
+            Status = proplists:get_value(<<"status">>, JSON),
+            case online_status(Status,UserId,ClientId) of
+                reply -> {reply, Message};
+                noreply -> noreply
+            end
+    end;
+handle_will_message(ClientId, Message) ->
+    mqtt_server:handle_will_message(ClientId, Message).
+
+% Outgoing messages
 -spec handle_event(Event :: term(), context()) ->
     {reply, mqtt_message(), context(), timeout()} |
     {noreply, context(), timeout()} |

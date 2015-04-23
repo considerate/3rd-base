@@ -10,11 +10,11 @@
 
 %% @doc Verify credential.
 verify(Username, Token) ->
-    case ejwt:parse_jwt(Token, ?SECRET) of
+case catch ejwt:parse_jwt(Token, ?SECRET) of
         invalid -> {error, forbidden};
         expired -> {error, forbidden};
         {Data} ->
-            case proplists:get_value(<<"admin">>,Data) of
+            case proplists:get_bool(<<"admin">>,Data) of
                 true ->
                     ok;
                 false ->
