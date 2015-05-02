@@ -7,6 +7,20 @@
 
 -include_lib("apns/include/apns.hrl").
 
+-spec is_online(binary()) -> online | offline.
+is_online(UserId) ->
+    case mnesia:dirty_read(mqtt_presence, UserId) of
+        [{mqtt_presence, _, Clients, _}] ->
+            case sets:size(Clients) > 0 of
+                true ->
+                    online;
+                false ->
+                    offline
+            end;
+        _DoesNotExist ->
+            offline
+    end.
+
 push(Text, Extra, #token{type=apns, token=Token}) ->
     apns:send_message(apns, #apns_msg{
       alert=Text,
@@ -34,7 +48,7 @@ user_data(UserId) ->
     {UserData} = jiffy:decode(UserBody),
     UserData.
 
--spec push_message_user([binary()], [proplists:property()], binary()) -> ok | nopush.
+-spec push_message_user([binary()], [proplists:property()], binary()) -> ok | error.
 push_message_user(Thread, Message, UserId) ->
     Text = make_nice_texts(Message),
     ThreadId = proplists:get_value(<<"_id">>, Thread),
@@ -54,9 +68,14 @@ push_message_user(Thread, Message, UserId) ->
             nopush
     end.
 
--spec push_message_users([binary()], [proplists:property()], [binary()]) -> [ ok | nopush ].
+-spec push_message_users([binary()], [proplists:property()], [binary()]) -> [ ok | error | nopush ].
 push_message_users(Thread, Message, [UserId|Users]) ->
-    Result = push_message_user(Thread, Message, UserId),
+    Result = case is_online(UserId) of
+        offline ->
+            push_message_user(Thread, Message, UserId);
+        online ->
+            nopush
+    end,
     [ Result | push_message_users(Thread, Message, Users) ];
 push_message_users(_, _, []) ->
     [].
@@ -67,7 +86,7 @@ make_nice_texts(Message) ->
     io_lib:format("~s: ~s",[From, Text]).
     %% << From/binary, <<": ">>/binary, Text/binary >>.
 
--spec push_message(binary(), [proplists:property()]) -> ok.
+-spec push_message(binary(), [proplists:property()]) -> ok | error.
 push_message(ThreadId, Message) ->
     {ok, {Thread}} = '3rd-base_db_utils':fetch(ThreadId),
     Users = proplists:get_value(<<"users">>, Thread),
