@@ -169,7 +169,7 @@ handle_message(
             {JSON} = jiffy:decode(Payload),
             Body = proplists:get_value(<<"body">>, JSON),
             NewData = persist_message(Message,Context,Session,ThreadId,Body,Data),
-            ok = '3rd-base_push':push_message(Context, ThreadId, JSON),
+            ok = '3rd-base_push':push_message(ThreadId, JSON),
             mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData});
         nomatch ->
             mqtt_server:handle_message(Message,Context)
