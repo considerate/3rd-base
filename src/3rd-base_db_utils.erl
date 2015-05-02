@@ -1,96 +1,119 @@
 -module ('3rd-base_db_utils').
--export ([query/1, query/2, query/3, connect_to_db/0,store_message/4,get_row_value/1,fetch/1]).
--define(BASE_ADDRESS,"http://127.0.0.1:5984/baseball").
-
-
-
-connect_to_db() ->
-	%initiate the http recuests thingy
-	%TODO: ADD CODE TO START COUCH DB IF NOT STARTED
-	_ = inets:start().
+-export ([
+    query/1,
+    query/2,
+    query/3,
+    put_to_db/2,
+    put_to_db/1,
+    store_message/4,
+    add_thread/5,
+    get_row_value/1,
+    fetch/1,
+    document_exists/3
+]).
+-define(BASE_ADDRESS,"http://localhost:5984/baseball").
 
 fetch(Id) when is_binary(Id) ->
-	fetch(binary_to_list(Id));
+    fetch(binary_to_list(Id));
 fetch(Id) when is_list(Id)->
-	io:format("~p", [Id]),
-	{ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ "/" ++ Id),
-	jiffy:decode(Body).
+    {ok, {{_Version, StatusCode, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ "/" ++ Id),
+    case StatusCode of
+    	200 ->
+    		{ok,jiffy:decode(Body)};
+    	Err ->
+    		{error,Err}
+    end.
 
-query(Query) ->
-	{ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ Query),
-	{Data} = jiffy:decode(Body),
-	{_, Rows} = proplists:lookup(<<"rows">>, Data),
-	{[{<<"rows">>,lists:map(fun get_row_value/1, Rows)}]}.
+query(Query)->
+    query(Query,{opts,[]}).
 
-%queies cdb with a base quary and a list of supplied query parameters.
-%Key must be a string
-%Param must be parsable by jiffy
-query(QueryBase,[{Key0,Param0}|T]) ->
-	
-	Query0 = "?" ++ Key0 ++ "=" ++ binary_to_list(jiffy:encode(Param0)),
-	QueryN = lists:foldl(
-	fun({KeyK,ParamK},QueryK) ->
-		QueryK ++ "&" ++ KeyK ++ "=" ++ binary_to_list(jiffy:encode(ParamK))
-	end,Query0,T),
-	query(QueryBase ++ QueryN);
-	
+query(Query, {opts,Opts}) when is_binary(Query) ->
+    NewQuery = binary_to_list(Query),
+    query(NewQuery,{opts,Opts});
+query(Query,{opts,Opts}) when is_list(Query) ->
+    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(?BASE_ADDRESS ++ Query),
+    {Data} = jiffy:decode(Body),
+    Rows = proplists:get_value(<<"rows">>, Data),
+    NewRows = case proplists:get_bool(reverse,Opts) of
+        false ->
+            Rows;
+        true ->
+            lists:reverse(Rows)
+    end,
+    {[{<<"rows">>,lists:map(fun get_row_value/1, NewRows)}]};
+query(QueryBase,[{Key,Param}|Rest]) ->
+    query(QueryBase,[{Key,Param}|Rest], {opts,[]});
 query(Query,Key) ->
-	query(Query,[{"key",Key}]).
-	
+    query(Query,[{"key",Key}]).
+
+query(BasePath, [{Key,Param}|Rest], {opts,Opts}) ->
+    AllParams = [{Key,Param}|Rest],
+    QS = binary_to_list(web_utils:querystring(AllParams)),
+    query(BasePath ++ QS, {opts, Opts});
 query(Query,StartKey,EndKey) ->
-	Start = binary_to_list(jiffy:encode(StartKey)),
-	End = binary_to_list(jiffy:encode(EndKey)),
-	query(Query, [{"startkey",Start},{"endkey",End}]).
+    Start = binary_to_list(jiffy:encode(StartKey)),
+    End = binary_to_list(jiffy:encode(EndKey)),
+    query(Query, [{"startkey",Start},{"endkey",End}]).
 
 bin_to_hex(Bin) when is_binary(Bin) ->
-	<< <<Y>> || <<X:4>> <= Bin, Y <- integer_to_list(X,16) >>.
+    << <<Y>> || <<X:4>> <= Bin, Y <- integer_to_list(X,16) >>.
 
 store_message(BinId, Message, Thread, Sender) ->
-	Id = bin_to_hex(BinId),
-	put_to_db(Id,{[
-		{<<"_id">>,Id},
-		{<<"type">>, <<"message">>},
-		{<<"body">>,Message},
-		{<<"thread">>,Thread},
-		{<<"from">>,Sender}
-	]}).
+    Id = bin_to_hex(BinId),
+    put_to_db(Id,{[
+        {<<"_id">>,Id},
+        {<<"type">>, <<"message">>},
+        {<<"body">>,Message},
+        {<<"thread">>,Thread},
+        {<<"from">>,Sender}
+    ]}).
 
-%get_messages(Group,{time,StartHour,StartMinut,StartSecond},{time,EndHour,EndMinut,EndSecond}) ->
-%	query("/_design/Messages/_view/message_history?startkey =\"">>,jiffy:encode([Group,[StartHour,StartMinut,StartSecond]]) ++ "\"&endkey=\""++ "[" ++ Group ++ ",[" ++ EndHour ++ "," ++ EndMinut ++ "," ++ EndSecond ++ "]" ++ "]" ++ "]" ++ "\"").
+add_thread(Id,Users,Name,Creator,Private) ->
+    
+    BaseOutput = [
+                {<<"type">>,<<"thread">>},
+                {<<"_id">>,Id},
+                {<<"users">>,Users},
+                {<<"creator">>,Creator},
+                {<<"private">>, Private}
+                ],
+    Output = case object_utils:valid_thread_name(Name) of
+        true ->
+            {[{<<"name">>,Name}|BaseOutput]};
+        false -> 
+            {BaseOutput}
+    end,
+    put_to_db(Id,Output).
 
-put_to_db(Id,StuffsToAdd) -> 
-	% Specifying options for http request to db
-	Method = put,
-	Url = ?BASE_ADDRESS ++ "/" ++ binary_to_list(Id),	
-	Headers = [],
-	Content_type = "application/json",
-	Body = jiffy:encode(StuffsToAdd),
-	Request = {Url,Headers,Content_type,Body},
-	HTTPOptions = [],
-	Options = [],
+put_to_db({JSONData}) ->
+    put_to_db(proplists:get_value(<<"_id">>,JSONData),{JSONData}).
 
-	%Making request to db
-	httpc:request(Method,Request,HTTPOptions,Options).
+put_to_db(Id,JSONData) ->
+    % Specifying options for http request to db
+    Method = put,
+    Url = ?BASE_ADDRESS ++ "/" ++ binary_to_list(Id),
+    Headers = [],
+    Content_type = "application/json",
+    Body = jiffy:encode(JSONData),
+    Request = {Url,Headers,Content_type,Body},
+    HTTPOptions = [],
+    Options = [],
 
-% run_test_put() -> put_to_db({[
-% 		{<<"Subject">>,<<"I like Plankton">>},
-% 		{<<"Author">>,<<"Rusty">>},
-% 		{<<"PostedDate">>,<<"2006-08-15T17:30:12-04:00">>},
-% 		{<<"Tags">>,[<<"plankton">>,<<"baseball">>,<<"decisions">>]},
-% 		{<<"Body">>,<<"I decided today that I don't like baseball. I like plankton.">>}
-% 	]}).
+    %Making request to db
+    httpc:request(Method,Request,HTTPOptions,Options).
 
-get_row_value({Obj}) -> 
-	Value = proplists:get_value(<<"value">>, Obj), 
-	Value.
-
-%The above erlang datastructure corresponds to the following json
-%"{ 
-%
-%			  "Subject":"I like Plankton",
-%			  "Author":"Rusty",
-%			  "PostedDate":"2006-08-15T17:30:12-04:00",
-%			  "Tags":["plankton", "baseball", "decisions"],
-%			  "Body":"I decided today that I don't like baseball. I like plankton."
-%			}"
-%	).
+get_row_value({Obj}) ->
+    Value = proplists:get_value(<<"value">>, Obj),
+    Value.
+    
+%Checks if a document  provided in DocumentType exists in the db.
+%Prepends the Document to state if it exists
+document_exists(DocumentType,Req,State) when is_atom(DocumentType) ->
+    ID = cowboy_req:binding(DocumentType, Req),
+    case fetch(ID) of
+        {ok,JSONData} ->
+            {true,Req,[{document,JSONData}|State]};
+        {error,_Err} ->
+            {false,Req,State}
+    end.
+    

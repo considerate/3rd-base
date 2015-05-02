@@ -4,6 +4,7 @@
 
 start(_Type, _Args) ->
     fubar:start(),
+    apns:connect(apns),
     '3rd-base_sup':start_link().
 
 stop(_State) ->
