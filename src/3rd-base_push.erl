@@ -36,7 +36,7 @@ user_data(UserId) ->
 
 -spec push_message_user([binary()], [proplists:property()], binary()) -> ok | nopush.
 push_message_user(Thread, Message, UserId) ->
-    Text = proplists:get_value(<<"body">>, Message),
+    Text = make_nice_texts(Message),
     ThreadId = proplists:get_value(<<"_id">>, Thread),
     Extra = [{thread, ThreadId},
              {message, {Message}}],
@@ -60,6 +60,12 @@ push_message_users(Thread, Message, [UserId|Users]) ->
     [ Result | push_message_users(Thread, Message, Users) ];
 push_message_users(_, _, []) ->
     [].
+    
+make_nice_texts(Message) ->
+    From = proplists:get_value(<<"from">>,Message),
+    Text = proplists:get_value(<<"body">>,Message),
+    io_lib:format("~s: ~s",[From, Text]).
+    %% << From/binary, <<": ">>/binary, Text/binary >>.
 
 -spec push_message(binary(), [proplists:property()]) -> ok.
 push_message(ThreadId, Message) ->
