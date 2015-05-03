@@ -167,7 +167,7 @@ handle_message(
             {JSON} = jiffy:decode(Payload),
             {ok,State} = gen_server:call(Session,state),
             UserId = mqtt_session:username(State),
-            NewMessage = [{<<"from">>, UserId} | JSON],
+            NewMessage = [{<<"sender">>, UserId} | JSON],
             Body = proplists:get_value(<<"body">>, JSON),
             NewData = persist_message(Message,Context,Session,ThreadId,Body,UserId,Data),
             ok = '3rd-base_push':push_message(ThreadId, NewMessage),

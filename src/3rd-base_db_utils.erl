@@ -69,7 +69,6 @@ store_message(BinId, Message, Thread, Sender) ->
     ]}).
 
 add_thread(Id,Users,Name,Creator,Private) ->
-    
     BaseOutput = [
                 {<<"type">>,<<"thread">>},
                 {<<"_id">>,Id},
