@@ -58,15 +58,18 @@ query(Query,StartKey,EndKey) ->
 bin_to_hex(Bin) when is_binary(Bin) ->
     << <<Y>> || <<X:4>> <= Bin, Y <- integer_to_list(X,16) >>.
 
-store_message(BinId, Message, Thread, Sender) ->
+store_message(BinId, JSONMessage, Thread, Sender) ->
     Id = bin_to_hex(BinId),
-    put_to_db(Id,{[
+    BaseMessage = {[
         {<<"_id">>,Id},
         {<<"type">>, <<"message">>},
-        {<<"body">>,Message},
         {<<"thread">>,Thread},
         {<<"from">>,Sender}
-    ]}).
+    ]},
+    Message = object_utils:add_fields_safely_from_json_source(BaseMessage,[<<"body">>,<<"image">>],JSONMessage),
+    put_to_db(Id,Message).
+    
+    
 
 add_thread(Id,Users,Name,Creator,Private) ->
     BaseOutput = [

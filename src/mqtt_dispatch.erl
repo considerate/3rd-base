@@ -79,10 +79,10 @@ init(Params) ->
     random:seed(erlang:now()),
     mqtt_server:init(Params ++ [{data, [{objectid, objectid:objectid()}]}]).
 
-persist_message(Message,Context,Session,ThreadId,Body,From,Data) ->
+persist_message(Message,Context,Session,ThreadId,MessageJson,From,Data) ->
     {_, ObjectId} = proplists:lookup(objectid, Data),
     {Id, NextId} = ObjectId,
-    '3rd-base_db_utils':store_message(Id, Body, ThreadId, From),
+    '3rd-base_db_utils':store_message(Id, MessageJson, ThreadId, From),
     [{objectid, NextId()}|proplists:delete(objectid,Data)].
 
 online_status(Status,UserId,ClientId) ->
@@ -168,8 +168,7 @@ handle_message(
             {ok,State} = gen_server:call(Session,state),
             UserId = mqtt_session:username(State),
             NewMessage = [{<<"sender">>, UserId} | JSON],
-            Body = proplists:get_value(<<"body">>, JSON),
-            NewData = persist_message(Message,Context,Session,ThreadId,Body,UserId,Data),
+            NewData = persist_message(Message,Context,Session,ThreadId,{JSON},UserId,Data),
             ok = '3rd-base_push':push_message(ThreadId, NewMessage),
             mqtt_server:handle_message(Message,Context#?CONTEXT{data=NewData});
         nomatch ->
